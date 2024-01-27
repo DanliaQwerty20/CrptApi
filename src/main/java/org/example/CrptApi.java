@@ -2,8 +2,7 @@ package org.example;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.fluent.Content;
 import org.apache.http.client.fluent.Request;
@@ -11,8 +10,7 @@ import org.apache.http.entity.ContentType;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -46,7 +44,7 @@ public class CrptApi {
         this.REQUEST_TIME_QUEUE = new ArrayBlockingQueue<>(requestLimit < 1 ? DEFAULT_REQUEST_LIMIT : requestLimit);
     }
 
-    public String createDocumentForRussianGoods(Document document, String signature) {
+    public String createDocumentForRussian(Document document, String signature) {
         return createDocument(document, signature, new DocumentFormat("MANUAL"), String.valueOf(new Type("LP_INTRODUCE_GOODS")), jsonConverter);
 
     }
@@ -77,14 +75,17 @@ public class CrptApi {
             long oldestRequestTimestamp = REQUEST_TIME_QUEUE.peek();
             long elapsedTime = Instant.now().toEpochMilli() - oldestRequestTimestamp;
 
-            if (elapsedTime >= TIME_UNIT.toMillis(1)) {
-                REQUEST_TIME_QUEUE.remove(oldestRequestTimestamp);
-            } else {
+            if (elapsedTime < TIME_UNIT.toMillis(1)) {
                 try {
                     Thread.sleep(TIME_UNIT.toMillis(1) - elapsedTime);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
+            }
+
+            // Удаляем запросы, время создания которых находится вне интервала TIME_UNIT
+            while (!REQUEST_TIME_QUEUE.isEmpty() && Instant.now().toEpochMilli() - REQUEST_TIME_QUEUE.peek() >= TIME_UNIT.toMillis(1)) {
+                REQUEST_TIME_QUEUE.poll();
             }
         }
     }
@@ -121,11 +122,11 @@ public class CrptApi {
         @Override
         public String convert(Object o) {
             try {
-                return objectMapper.writeValueAsString(o);
+                return Optional.of(objectMapper.writeValueAsString(o)).orElse("");
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
+                return "Ошибка конверта";
             }
-            return null;
         }
     }
 
@@ -163,12 +164,10 @@ public class CrptApi {
 
     @Getter
     @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Description {
         private String participantInn;
-
-        public Description(String participantInn) {
-            this.participantInn = participantInn;
-        }
     }
 
     @Getter
@@ -195,41 +194,40 @@ public class CrptApi {
 
     @Getter
     @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class CertificateDocument {
         private String type;
 
-        public CertificateDocument(String type) {
-            this.type = type;
-        }
     }
 
     @Getter
     @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Type {
         private String value;
 
-        public Type(String value) {
-            this.value = value;
-        }
+
     }
 
     @Getter
     @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class DocumentFormat {
         private String value;
 
-        public DocumentFormat(String value) {
-            this.value = value;
-        }
+
     }
 
     @Getter
     @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class ProductGroup {
         private String value;
 
-        public ProductGroup(String value) {
-            this.value = value;
-        }
+
     }
 }

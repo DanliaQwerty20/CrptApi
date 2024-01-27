@@ -35,7 +35,7 @@ public class Main {
             String signature = "exampleSignature";
 
             // Вызываем метод для создания документа
-            String result = api.createDocumentForRussianGoods(document, signature);
+            String result = api.createDocumentForRussian(document, signature);
             System.out.println(result);
         } catch (Exception e) {
             e.printStackTrace();
